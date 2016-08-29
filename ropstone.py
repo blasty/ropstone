@@ -282,7 +282,7 @@ class ropstone():
                 for match in matches:
                     bytecode = match['pattern'].decode('hex')
                     disas = []
-                    for ins in md.disasm(bytecode, 0):
+                    for ins in md.disasm(bytecode, match['addr']):
                         disas.append("%s %s" % (ins.mnemonic, ins.op_str))
 
                     if len(disas) == 0:
