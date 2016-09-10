@@ -3,7 +3,7 @@
 """ropstone
 
 Usage:
-    ropstone.py [-s] [-S SECTIONS] [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
+    ropstone.py [-f] [-s] [-S SECTIONS] [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
     ropstone.py -A
     ropstone.py -a <ARCH> -M
 
@@ -22,6 +22,7 @@ options:
   -b, --base ADDR          specify base address
   -s, --single             only display unique gadgets
   -S, --section SECTIONS   only display gadgets from sections (comma separated)
+  -f, --fancy              fancy (colorized) output
 """
 
 import sys
@@ -42,6 +43,7 @@ class ropstone():
     unique_only = False
     unique_patterns = []
     section_filter = None
+    fancy = False
 
     archs = [
         {
@@ -128,8 +130,28 @@ class ropstone():
         }
     ]
 
+    color_tbl = [
+        'black', 'red', 'green', 'yellow', 
+        'blue', 'magenta', 'cyan', 'white'
+    ]
+
+    def col_fg(self, col):
+        return "\x1b[%dm" % (30 + self.color_tbl.index(col))
+
+    def col_bold(self):
+        return "\x1b[1m"
+
+    def col_end(self):
+        return "\x1b[0m"
+
     def error(self, errstr):
-        sys.stderr.write("ERROR: " + errstr + "\n")
+        if self.fancy:
+            o = self.col_fg('red') + self.col_bold()
+            o += "ERROR: " + self.col_end() + errstr + "\n"
+            sys.stderr.write(o)
+        else:
+            sys.stderr.write("ERROR: " + errstr + "\n")
+
         exit(-1)
 
     def get_arch_by_name(self, name):
@@ -214,8 +236,8 @@ class ropstone():
         if self.arguments['base'] is not None:
             self.base_addr = int(self.arguments['base'], 0)
 
-        if self.arguments['single']:
-            self.unique_only = True
+        self.unique_only = self.arguments['single']
+        self.fancy = self.arguments['fancy']
 
         # check if input file is ELF, if so: determine ARCH and MODE
         if self.arguments['FILE'] is not None:
@@ -307,7 +329,12 @@ class ropstone():
 
             num_hits = 0
 
-            print "> searching for pattern '%s'\n" % (pattern)
+            if self.fancy:
+                print "> searching for pattern '%s%s%s'\n" % (
+                    self.col_fg('green')+self.col_bold(), pattern, self.col_end()
+                )
+            else:
+                print "> searching for pattern '%s'\n" % (pattern)
 
             cs_mode = 0
             retshift = 0
@@ -339,7 +366,12 @@ class ropstone():
                             continue
 
                     if matches_printed == 0:
-                        print "> hits in '%s':" % (chunk['name'])
+                        if self.fancy:
+                            print "> hits in '%s%s%s':" % (
+                                self.col_bold(), chunk['name'], self.col_end()
+                            )
+                        else:
+                            print "> hits in '%s':" % (chunk['name'])
 
                     matches_printed = matches_printed + 1
 
@@ -351,11 +383,18 @@ class ropstone():
                     if len(disas) == 0:
                         disas = [ "<INVALID>" ]
 
-                    print " + %08x | %s | %s" % (
-                        chunk['addr']+match['addr']+retshift,
-                        match['pattern'],
-                        " ; ".join(disas)
-                    )
+                    if self.fancy:
+                        print " + %s%08x%s | %s%s%s | %s%s%s" % (
+                            self.col_fg('cyan'), chunk['addr']+match['addr']+retshift, self.col_end(),
+                            self.col_fg('red'), match['pattern'], self.col_end(),
+                            self.col_fg('green'), " ; ".join(disas), self.col_end()
+                        )
+                    else:
+                        print " + %08x | %s | %s" % (
+                            chunk['addr']+match['addr']+retshift,
+                            match['pattern'],
+                            " ; ".join(disas)
+                        )
 
                     if self.unique_only:
                         self.unique_patterns.append(match['pattern'])
@@ -366,7 +405,11 @@ class ropstone():
             if num_hits == 0:
                 self.error("not a single match found, better luck next time! :(")
             else:
-                print "> %d hits found!" % (num_hits)
+                if self.fancy:
+                    print "> %s%d hits%s found!" % (self.col_bold(), num_hits, self.col_end())
+                else:
+                    print "> %d hits found!" % (num_hits)
+
                 print ""
 
 rs = ropstone()
