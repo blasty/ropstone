@@ -21,6 +21,7 @@ options:
   -M, --list-mode          list all architecture mode parameters
   -b, --base ADDR          specify base address
   -s, --single             only display unique gadgets
+  -S, --section SECTION    only display gadgets from sections
 """
 
 import sys
@@ -40,6 +41,7 @@ class ropstone():
     base_addr = 0
     unique_only = False
     unique_patterns = []
+    section_filter = None
 
     archs = [
         {
@@ -221,6 +223,10 @@ class ropstone():
                         'addr' : section['sh_addr'],
                         'data' : section.data()
                     })
+
+                if self.arguments['section'] is not None:
+                    self.section_filter = self.arguments['section'].split(",")
+
             else:
                 self.bin_chunks.append({
                     'name' : "RAW",
@@ -278,6 +284,10 @@ class ropstone():
             md = Cs(self.arch['cs_const'], cs_mode)
 
             for chunk in self.bin_chunks:
+                if self.section_filter is not None:
+                    if chunk['name'] not in self.section_filter:
+                        continue
+
                 matches = self.find_pattern(chunk['data'], pattern)
 
                 num_hits = num_hits + len(matches)
