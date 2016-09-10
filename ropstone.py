@@ -75,6 +75,38 @@ class ropstone():
             ]
         },
         {
+            "name"     : "mips",
+            "cs_const" : CS_ARCH_MIPS,
+            "ks_const" : KS_ARCH_MIPS,
+            "boundary" : 4,
+            "modes"    : [
+                {
+                    "name"     : "32b",
+                    "desc"     : "MIPS32",
+                    "cs_const" : CS_MODE_MIPS32,
+                    "ks_const" : KS_MODE_MIPS32
+                },
+                {
+                    "name"     : "64b",
+                    "desc"     : "MIPS64",
+                    "cs_const" : CS_MODE_MIPS64,
+                    "ks_const" : KS_MODE_MIPS64
+                },
+                {
+                    "name"     : "le",
+                    "desc"     : "Little endian",
+                    "cs_const" : CS_MODE_LITTLE_ENDIAN,
+                    "ks_const" : KS_MODE_LITTLE_ENDIAN,
+                },
+                {
+                    "name"     : "be",
+                    "desc"     : "Big endian",
+                    "cs_const" : CS_MODE_BIG_ENDIAN,
+                    "ks_const" : KS_MODE_BIG_ENDIAN,
+                }
+            ]
+        },
+        {
             "name"     : "x86",
             "cs_const" : CS_ARCH_X86,
             "ks_const" : KS_ARCH_X86,
@@ -206,8 +238,16 @@ class ropstone():
                         self.modes.append(self.get_mode_by_name(self.arch, "le"))
                     else:
                         self.modes.append(self.get_mode_by_name(self.arch, "be"))
+                elif march == "MIPS":
+                    self.arch = self.get_arch_by_name("mips")
+                    self.modes.append(self.get_mode_by_name(self.arch, "32b"))
+
+                    if elffile.little_endian:
+                        self.modes.append(self.get_mode_by_name(self.arch, "le"))
+                    else:
+                        self.modes.append(self.get_mode_by_name(self.arch, "be"))
                 else:
-                    self.error("ELF has unsupported machine type. (0x%x)" % elffile['e_machine'])
+                    self.error("ELF has unsupported machine type. (%s)" % elffile['e_machine'])
 
                 for i in xrange(elffile.num_sections()):
                     section = elffile.get_section(i)
