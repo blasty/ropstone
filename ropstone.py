@@ -3,7 +3,7 @@
 """ropstone
 
 Usage:
-    ropstone.py [-s] [-S SECTION] [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
+    ropstone.py [-s] [-S SECTIONS] [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
     ropstone.py -A
     ropstone.py -a <ARCH> -M
 
@@ -21,7 +21,7 @@ options:
   -M, --list-mode          list all architecture mode parameters
   -b, --base ADDR          specify base address
   -s, --single             only display unique gadgets
-  -S, --section SECTION    only display gadgets from sections
+  -S, --section SECTIONS   only display gadgets from sections (comma separated)
 """
 
 import sys
