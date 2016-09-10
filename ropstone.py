@@ -3,7 +3,7 @@
 """ropstone
 
 Usage:
-    ropstone.py [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
+    ropstone.py [-s] [-S SECTION] [-b ADDR] [-a ARCH] [-m MODE(s)] <FILE> <PATTERN>
     ropstone.py -A
     ropstone.py -a <ARCH> -M
 
@@ -14,12 +14,13 @@ Arguments:
   PATTERN  hex pattern ('?' is nibble wildcard) or assembly code
 
 options:
-  -h, --help        display help output
-  -a, --arch ARCH   specify architecture
-  -A, --list-arch   list all available architectures
-  -m, --mode MODE   specify architecture mode parameters (comma separated)
-  -M, --list-mode   list all architecture mode parameters
-  -b, --base ADDR   specify base address
+  -h, --help               display help output
+  -a, --arch ARCH          specify architecture
+  -A, --list-arch          list all available architectures
+  -m, --mode MODE          specify architecture mode parameters (comma separated)
+  -M, --list-mode          list all architecture mode parameters
+  -b, --base ADDR          specify base address
+  -s, --single             only display unique gadgets
 """
 
 import sys
@@ -37,6 +38,8 @@ class ropstone():
     arch = None
     modes = []
     base_addr = 0
+    unique_only = False
+    unique_patterns = []
 
     archs = [
         {
@@ -177,6 +180,9 @@ class ropstone():
         if self.arguments['base'] is not None:
             self.base_addr = int(self.arguments['base'], 0)
 
+        if self.arguments['single']:
+            self.unique_only = True
+
         # check if input file is ELF, if so: determine ARCH and MODE
         if self.arguments['FILE'] is not None:
             if self.is_elf(self.arguments['FILE']):
@@ -274,12 +280,19 @@ class ropstone():
             for chunk in self.bin_chunks:
                 matches = self.find_pattern(chunk['data'], pattern)
 
-                if len(matches) > 0:
-                    print "> hits in '%s':" % (chunk['name'])
-
                 num_hits = num_hits + len(matches)
+                matches_printed = 0
 
                 for match in matches:
+                    if self.unique_only:
+                        if match['pattern'] in self.unique_patterns:
+                            continue
+
+                    if matches_printed == 0:
+                        print "> hits in '%s':" % (chunk['name'])
+
+                    matches_printed = matches_printed + 1
+
                     bytecode = match['pattern'].decode('hex')
                     disas = []
                     for ins in md.disasm(bytecode, chunk['addr']+match['addr']):
@@ -294,11 +307,16 @@ class ropstone():
                         " ; ".join(disas)
                     )
 
-                if num_hits == 0:
-                    self.error("not a single match found, better luck next time! :(")
-                else:
+                    if self.unique_only:
+                        self.unique_patterns.append(match['pattern'])
+
+                if matches_printed > 0:
                     print ""
-                    print "> %d hits found!" % (num_hits)
-                    print ""
+
+            if num_hits == 0:
+                self.error("not a single match found, better luck next time! :(")
+            else:
+                print "> %d hits found!" % (num_hits)
+                print ""
 
 rs = ropstone()
