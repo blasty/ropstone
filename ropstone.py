@@ -77,6 +77,20 @@ class ropstone():
             ]
         },
         {
+            "name"     : "arm64",
+            "cs_const" : CS_ARCH_ARM64,
+            "ks_const" : KS_ARCH_ARM64,
+            "boundary" : 4,
+            "modes"    : [
+                {
+                    "name"     : "le",
+                    "desc"     : "Little Endian",
+                    "cs_const" : CS_MODE_LITTLE_ENDIAN,
+                    "ks_const" : KS_MODE_LITTLE_ENDIAN
+                }
+            ]
+        },
+        {
             "name"     : "mips",
             "cs_const" : CS_ARCH_MIPS,
             "ks_const" : KS_ARCH_MIPS,
@@ -169,19 +183,19 @@ class ropstone():
         return None
 
     def list_archs(self):
-        print " > Architecture list:"
+        print(" > Architecture list:")
         for arch in self.archs:
-            print "  - " + arch['name']
-        print ""
+            print ("  - " + arch['name'])
+        print ("")
 
     def list_modes(self):
-        print " > Mode parameters for architecture '%s':" % (self.arch['name'])
+        print (" > Mode parameters for architecture '%s':" % (self.arch['name']))
         for mode in self.arch['modes']:
-            print " - %s : %s" % (mode['name'], mode['desc'])
-        print ""
+            print (" - %s : %s" % (mode['name'], mode['desc']))
+        print ("")
 
     def is_elf(self, filename):
-        magic = open(filename, "rb").read(4)
+        magic = str(open(filename, "rb").read(4))
 
         if magic == chr(0x7f)+"ELF":
             return True
@@ -226,7 +240,7 @@ class ropstone():
         return matches
 
     def __init__(self):
-        print "\n" + self.BANNER_STR + "\n"
+        print ("\n" + self.BANNER_STR + "\n")
 
         arguments = docopt(__doc__)
 
@@ -322,7 +336,7 @@ class ropstone():
             self.list_modes()
         else:
             # figure out if parameter is a hex pattern or asm code
-	    if re.search("^[0-9a-f\?]+$", self.arguments['PATTERN']) != None:
+            if re.search("^[0-9a-f\?]+$", self.arguments['PATTERN']) != None:
                 pattern = self.arguments['PATTERN']
             else:
                 pattern = self.assemble_str(self.arguments['PATTERN']).encode('hex')
@@ -330,11 +344,11 @@ class ropstone():
             num_hits = 0
 
             if self.fancy:
-                print "> searching for pattern '%s%s%s'\n" % (
+                print ("> searching for pattern '%s%s%s'\n" % (
                     self.col_fg('green')+self.col_bold(), pattern, self.col_end()
-                )
+                ))
             else:
-                print "> searching for pattern '%s'\n" % (pattern)
+                print ("> searching for pattern '%s'\n" % (pattern))
 
             cs_mode = 0
             retshift = 0
@@ -367,11 +381,11 @@ class ropstone():
 
                     if matches_printed == 0:
                         if self.fancy:
-                            print "> hits in '%s%s%s':" % (
+                            print ("> hits in '%s%s%s':" % (
                                 self.col_bold(), chunk['name'], self.col_end()
-                            )
+                            ))
                         else:
-                            print "> hits in '%s':" % (chunk['name'])
+                            print ("> hits in '%s':" % (chunk['name']))
 
                     matches_printed = matches_printed + 1
 
@@ -384,32 +398,32 @@ class ropstone():
                         disas = [ "<INVALID>" ]
 
                     if self.fancy:
-                        print " + %s%08x%s | %s%s%s | %s%s%s" % (
+                        print (" + %s%08x%s | %s%s%s | %s%s%s" % (
                             self.col_fg('cyan'), chunk['addr']+match['addr']+retshift, self.col_end(),
                             self.col_fg('red'), match['pattern'], self.col_end(),
                             self.col_fg('green'), " ; ".join(disas), self.col_end()
-                        )
+                        ))
                     else:
-                        print " + %08x | %s | %s" % (
+                        print (" + %08x | %s | %s" % (
                             chunk['addr']+match['addr']+retshift,
                             match['pattern'],
                             " ; ".join(disas)
-                        )
+                        ))
 
                     if self.unique_only:
                         self.unique_patterns.append(match['pattern'])
 
                 if matches_printed > 0:
-                    print ""
+                    print ("")
 
             if num_hits == 0:
                 self.error("not a single match found, better luck next time! :(")
             else:
                 if self.fancy:
-                    print "> %s%d hits%s found!" % (self.col_bold(), num_hits, self.col_end())
+                    print ("> %s%d hits%s found!" % (self.col_bold(), num_hits, self.col_end()))
                 else:
-                    print "> %d hits found!" % (num_hits)
+                    print ("> %d hits found!" % (num_hits))
 
-                print ""
+                print ("")
 
 rs = ropstone()
